@@ -1,24 +1,28 @@
-name: Coriolis Unit Tests
+name: Cloudbase-Init unit tests
 
-on:
-  workflow_dispatch:
-  pull_request:
-    branches: [ "master" ]
-
-permissions:
-  contents: read
+on: [push, pull_request]
 
 jobs:
   build:
-
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        python-version: ["3.8"]
+        architecture: ["x64"]
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Install dependencies
+    - name: Checkout cloudbase-init repository
+      uses: actions/checkout@v3
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+        architecture: ${{ matrix.architecture }}
+    - name: Install python3 tox
+      shell: bash
       run: |
-        pip install -r requirements.txt
-        pip install -r test-requirements.txt
-    - name: Run unit tests
+        python3 -m pip install tox
+    - name: Run Cloudbase-Init unit tests with tox
+      shell: bash
       run: |
-        python -m nose -v --nocapture --logging-level=ERROR coriolis/tests
+        tox run-parallel -e py3,pep8,flake8 -v
